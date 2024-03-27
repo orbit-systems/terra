@@ -1,0 +1,5 @@
+#!/bin/env sh
+
+cargo fmt || exit 1
+cargo check || exit 1
+cargo check --release || exit 1

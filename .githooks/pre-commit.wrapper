@@ -1,0 +1,3 @@
+#!/bin/env sh
+
+exec .githooks/pre-commit
