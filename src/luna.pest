@@ -28,7 +28,22 @@ float_single     = @{ "f" }
 float_double     = @{ "d" }
 float            = ${ float_v ~ (float_half | float_single | float_double) }
 
-escape_ascii_str = ${ "\"" | "\\" | "n" | "r" | "t" | "0" | (NEWLINE ~ (WHITE_SPACE)*) }
+// TODO: follow byte & unicode format of luna
+escape_ascii_str = ${
+    "0"
+  | "a"
+  | "b"
+  | "e"
+  | "f"
+  | "n"
+  | "r"
+  | "t"
+  | "v"
+  | "\\"
+  | "\""
+  | "'"
+  | (NEWLINE ~ (WHITE_SPACE)*)
+}
 escape_byte      = @{ "x" ~ HEX_DIGIT ~ HEX_DIGIT }
 escape_unicode   = @{ "u" ~ "{" ~ (HEX_DIGIT){1, 6} ~ "}" }
 escape_str       = @{ "\\" ~ (escape_ascii_str | escape_byte | escape_unicode) }
