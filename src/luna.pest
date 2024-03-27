@@ -1,0 +1,391 @@
+WHITESPACE = _{ " " | "\t" }
+COMMENT    = _{ semicolon ~ (!NEWLINE ~ ANY)* }
+
+/* == char tokens */
+
+colon     = _{ ":" }
+semicolon = _{ ";" }
+comma     = _{ "," }
+dot       = @{ "." }
+plus      = @{ "+" }
+minus     = @{ "-" }
+
+/* = literals */
+sign = { plus | minus }
+
+int_decimal = @{ (ASCII_DIGIT) ~ (ASCII_DIGIT | "_")* }
+int_hex     = @{ ("0x" | "0X") ~ (ASCII_HEX_DIGIT) ~ (ASCII_HEX_DIGIT | "_")* }
+int_oct     = @{ ("0o" | "0O") ~ (ASCII_OCT_DIGIT) ~ (ASCII_OCT_DIGIT | "_")* }
+int_bin     = @{ ("0b" | "0B") ~ (ASCII_BIN_DIGIT) ~ (ASCII_BIN_DIGIT | "_")* }
+uint        =  { int_hex | int_oct | int_bin | int_decimal }
+sint        = ${ sign? ~ uint }
+
+float_decimal    = ${ (int_decimal? ~ dot ~ int_decimal) | (int_decimal ~ dot) }
+float_scientific = ${ float_decimal ~ "e" ~ sint }
+float_v          = ${ (sign? ~ (float_decimal | float_scientific | uint | ^"inf")) | ^"nan" }
+float_half       = @{ "h" }
+float_single     = @{ "f" }
+float_double     = @{ "d" }
+float            = ${ float_v ~ (float_half | float_single | float_double) }
+
+escape_ascii_str = ${ "\"" | "\\" | "n" | "r" | "t" | "0" | (NEWLINE ~ (WHITE_SPACE)*) }
+escape_byte      = @{ "x" ~ HEX_DIGIT ~ HEX_DIGIT }
+escape_unicode   = @{ "u" ~ "{" ~ (HEX_DIGIT){1, 6} ~ "}" }
+escape_str       = @{ "\\" ~ (escape_ascii_str | escape_byte | escape_unicode) }
+
+string_raw         = ${ "r" ~ PUSH("#"*) ~ "\"" ~ string_raw_content ~ "\"" ~ POP }
+string_raw_content = @{ (!("\"" ~ PEEK) ~ ANY)* }
+string_char        = @{ (!"\"" ~ ANY) }
+string_std         = ${ "\"" ~ (escape_str | string_char)* ~ "\"" }
+string             = ${ string_std | string_raw }
+
+escape_ascii_char = ${ "'" | "\\" | "n" | "r" | "t" | "0" }
+escape_char       = @{ "\\" ~ (escape_ascii_char | escape_byte | escape_unicode) }
+
+char_content = @{ !NEWLINE ~ ANY }
+char         = ${ "'" ~ (escape_char | char_content) ~ "'" }
+
+// including ident for define
+imm = { sint | char | float | ident }
+/* = keywords */
+ident_char   =  { ASCII_ALPHA | "_" | "." | ASCII_DIGIT }
+global_ident = @{ (ASCII_ALPHA | "_") ~ (ASCII_ALPHA | "_" | "." | ASCII_DIGIT)* }
+local_ident  = ${ dot ~ global_ident }
+ident        =  { (!reg ~ global_ident) | local_ident }
+label        =  { ident ~ colon }
+
+/* == registers */
+rz  = @{ "rz" ~ !ident_char }
+ra  = @{ "ra" ~ !ident_char }
+rb  = @{ "rb" ~ !ident_char }
+rc  = @{ "rc" ~ !ident_char }
+rd  = @{ "rd" ~ !ident_char }
+re  = @{ "re" ~ !ident_char }
+rf  = @{ "rf" ~ !ident_char }
+rg  = @{ "rg" ~ !ident_char }
+rh  = @{ "rh" ~ !ident_char }
+ri  = @{ "ri" ~ !ident_char }
+rj  = @{ "rj" ~ !ident_char }
+rk  = @{ "rk" ~ !ident_char }
+ip  = @{ "ip" ~ !ident_char }
+sp  = @{ "sp" ~ !ident_char }
+fp  = @{ "fp" ~ !ident_char }
+st  = @{ "st" ~ !ident_char }
+reg =  { (rz | ra | rb | rc | rd | re | rf | rg | rh | ri | rj | rk | ip | sp | fp | st) }
+
+/* == instruction keywords */
+/* === System Control */
+nop  = @{ "nop" ~ !ident_char }
+inv  = @{ "inv" ~ !ident_char }
+int  = @{ "int" ~ !ident_char }
+iret = @{ "iret" ~ !ident_char }
+ires = @{ "ires" ~ !ident_char }
+usr  = @{ "usr" ~ !ident_char }
+
+/* === Input & Output */
+out  = @{ "out" ~ !ident_char }
+outr = @{ "outr" ~ !ident_char }
+outi = @{ "outi" ~ !ident_char }
+in   = @{ "in" ~ !ident_char }
+inr  = @{ "inr" ~ !ident_char }
+ini  = @{ "ini" ~ !ident_char }
+
+/* === Control Flow */
+call  = @{ "call" ~ !ident_char }
+callr = @{ "callr" ~ !ident_char }
+jal   = @{ "jal" ~ !ident_char }
+jalr  = @{ "jalr" ~ !ident_char }
+ret   = @{ "ret" ~ !ident_char }
+retr  = @{ "retr" ~ !ident_char }
+bra   = @{ "bra" ~ !ident_char }
+beq   = @{ "beq" ~ !ident_char }
+bez   = @{ "bez" ~ !ident_char }
+blt   = @{ "blt" ~ !ident_char }
+ble   = @{ "ble" ~ !ident_char }
+bltu  = @{ "bltu" ~ !ident_char }
+bleu  = @{ "bleu" ~ !ident_char }
+bne   = @{ "bne" ~ !ident_char }
+bnz   = @{ "bnz" ~ !ident_char }
+bge   = @{ "bge" ~ !ident_char }
+bgt   = @{ "bgt" ~ !ident_char }
+bgeu  = @{ "bgeu" ~ !ident_char }
+bgtu  = @{ "bgtu" ~ !ident_char }
+
+/* === Stack Operations */
+push  = @{ "push" ~ !ident_char }
+pop   = @{ "pop" ~ !ident_char }
+enter = @{ "enter" ~ !ident_char }
+leave = @{ "leave" ~ !ident_char }
+
+/* === Data Flow */
+mov   = @{ "mov" ~ !ident_char }
+li    = @{ "li" ~ !ident_char }
+lli   = @{ "lli" ~ !ident_char }
+llis  = @{ "llis" ~ !ident_char }
+lui   = @{ "lui" ~ !ident_char }
+luis  = @{ "luis" ~ !ident_char }
+lti   = @{ "lti" ~ !ident_char }
+ltis  = @{ "ltis" ~ !ident_char }
+ltui  = @{ "ltui" ~ !ident_char }
+ltuis = @{ "ltuis" ~ !ident_char }
+lw    = @{ "lw" ~ !ident_char }
+lh    = @{ "lh" ~ !ident_char }
+lhs   = @{ "lhs" ~ !ident_char }
+lq    = @{ "lq" ~ !ident_char }
+lqs   = @{ "lqs" ~ !ident_char }
+lb    = @{ "lb" ~ !ident_char }
+lbs   = @{ "lbs" ~ !ident_char }
+sw    = @{ "sw" ~ !ident_char }
+sh    = @{ "sh" ~ !ident_char }
+sq    = @{ "sq" ~ !ident_char }
+sb    = @{ "sb" ~ !ident_char }
+
+/* === Comparisons */
+cmp  = @{ "cmp" ~ !ident_char }
+cmpr = @{ "cmpr" ~ !ident_char }
+cmpi = @{ "cmpi" ~ !ident_char }
+
+/* === Arithmetic Operations */
+add   = @{ "add" ~ !ident_char }
+addr  = @{ "addr" ~ !ident_char }
+addi  = @{ "addi" ~ !ident_char }
+sub   = @{ "sub" ~ !ident_char }
+subr  = @{ "subr" ~ !ident_char }
+subi  = @{ "subi" ~ !ident_char }
+imul  = @{ "imul" ~ !ident_char }
+imulr = @{ "imulr" ~ !ident_char }
+imuli = @{ "imuli" ~ !ident_char }
+idiv  = @{ "idiv" ~ !ident_char }
+idivr = @{ "idivr" ~ !ident_char }
+idivi = @{ "idivi" ~ !ident_char }
+umul  = @{ "umul" ~ !ident_char }
+umulr = @{ "umulr" ~ !ident_char }
+umuli = @{ "umuli" ~ !ident_char }
+udiv  = @{ "udiv" ~ !ident_char }
+udivr = @{ "udivr" ~ !ident_char }
+udivi = @{ "udivi" ~ !ident_char }
+rem   = @{ "rem" ~ !ident_char }
+remr  = @{ "remr" ~ !ident_char }
+remi  = @{ "remi" ~ !ident_char }
+mod   = @{ "mod" ~ !ident_char }
+modr  = @{ "modr" ~ !ident_char }
+modi  = @{ "modi" ~ !ident_char }
+
+/* === Bitwise Operations */
+not     = @{ "not" ~ !ident_char }
+and     = @{ "and" ~ !ident_char }
+andr    = @{ "andr" ~ !ident_char }
+andi    = @{ "andi" ~ !ident_char }
+or      = @{ "or" ~ !ident_char }
+orr     = @{ "orr" ~ !ident_char }
+ori     = @{ "ori" ~ !ident_char }
+nor     = @{ "nor" ~ !ident_char }
+norr    = @{ "norr" ~ !ident_char }
+nori    = @{ "nori" ~ !ident_char }
+xor     = @{ "xor" ~ !ident_char }
+xorr    = @{ "xorr" ~ !ident_char }
+xori    = @{ "xori" ~ !ident_char }
+shl     = @{ "shl" ~ !ident_char }
+shlr    = @{ "shlr" ~ !ident_char }
+shli    = @{ "shli" ~ !ident_char }
+asr     = @{ "asr" ~ !ident_char }
+asrr    = @{ "asrr" ~ !ident_char }
+asri    = @{ "asri" ~ !ident_char }
+lsr     = @{ "lsr" ~ !ident_char }
+lsrr    = @{ "lsrr" ~ !ident_char }
+lsri    = @{ "lsri" ~ !ident_char }
+bit     = @{ "bit" ~ !ident_char }
+bitr    = @{ "bitr" ~ !ident_char }
+biti    = @{ "biti" ~ !ident_char }
+setfs   = @{ "setfs" ~ !ident_char }
+setfz   = @{ "setfz" ~ !ident_char }
+setfcb  = @{ "setfcb" ~ !ident_char }
+setfcbu = @{ "setfcbu" ~ !ident_char }
+setfe   = @{ "setfe" ~ !ident_char }
+setfl   = @{ "setfl" ~ !ident_char }
+setflu  = @{ "setflu" ~ !ident_char }
+
+/* === Floating Point Operations */
+
+half_suffix   = @{ ".16" }
+single_suffix = @{ ".32" }
+double_suffix = @{ ".64" }
+f_op_suffix   =  { half_suffix | single_suffix | double_suffix }
+
+fcmp  = ${ "fcmp" ~ f_op_suffix ~ !ident_char }
+fto   = ${ "fto" ~ f_op_suffix ~ !ident_char }
+ffrom = ${ "ffrom" ~ f_op_suffix ~ !ident_char }
+fneg  = ${ "fneg" ~ f_op_suffix ~ !ident_char }
+fabs  = ${ "fabs" ~ f_op_suffix ~ !ident_char }
+fadd  = ${ "fadd" ~ f_op_suffix ~ !ident_char }
+fsub  = ${ "fsub" ~ f_op_suffix ~ !ident_char }
+fmul  = ${ "fmul" ~ f_op_suffix ~ !ident_char }
+fdiv  = ${ "fdiv" ~ f_op_suffix ~ !ident_char }
+fma   = ${ "fma" ~ f_op_suffix ~ !ident_char }
+fsqrt = ${ "fsqrt" ~ f_op_suffix ~ !ident_char }
+fmin  = ${ "fmin" ~ f_op_suffix ~ !ident_char }
+fmax  = ${ "fmax" ~ f_op_suffix ~ !ident_char }
+fsat  = ${ "fsat" ~ f_op_suffix ~ !ident_char }
+fcnv  = ${ "fcnv" ~ f_op_suffix ~ f_op_suffix ~ !ident_char }
+fnan  = ${ "fnan" ~ f_op_suffix ~ !ident_char }
+
+/* === Pseudo Instructions */
+define = @{ "define" ~ !ident_char }
+loc    = @{ "loc" ~ !ident_char }
+align  = @{ "align" ~ !ident_char }
+byte   = @{ "byte" ~ !ident_char }
+d8     = @{ "d8" ~ !ident_char }
+d16    = @{ "d16" ~ !ident_char }
+d32    = @{ "d32" ~ !ident_char }
+d64    = @{ "d64" ~ !ident_char }
+skip   = @{ "skip" ~ !ident_char }
+utf8   = @{ "utf8" ~ !ident_char }
+
+/* == instructions */
+/* === System Control */
+i_nop  = { nop }
+i_inv  = { inv }
+i_int  = { int ~ imm }
+i_iret = { iret }
+i_ires = { ires }
+i_usr  = { usr ~ reg }
+
+/* === Input & Output */
+i_outr = { (outr | out) ~ reg ~ comma ~ reg }
+i_outi = { (outi | out) ~ imm ~ comma ~ reg }
+i_inr  = { (inr | in) ~ reg ~ comma ~ reg }
+i_ini  = { (ini | in) ~ reg ~ comma ~ imm }
+
+/* === Control Flow */
+i_call  = { call ~ reg ~ comma ~ imm }
+i_callr = { callr ~ reg ~ comma ~ imm ~ comma ~ reg }
+i_jal   = { jal ~ reg ~ comma ~ imm }
+i_jalr  = { jalr ~ reg ~ comma ~ imm ~ comma ~ reg }
+i_ret   = { ret }
+i_retr  = { retr ~ reg }
+i_bra   = { bra ~ imm }
+i_beq   = { beq ~ imm }
+i_bez   = { bez ~ imm }
+i_blt   = { blt ~ imm }
+i_ble   = { ble ~ imm }
+i_bltu  = { bltu ~ imm }
+i_bleu  = { bleu ~ imm }
+i_bne   = { bne ~ imm }
+i_bnz   = { bnz ~ imm }
+i_bge   = { bge ~ imm }
+i_bgt   = { bgt ~ imm }
+i_bgeu  = { bgeu ~ imm }
+i_bgtu  = { bgtu ~ imm }
+
+/* === Stack Operations */
+i_push  = { push ~ reg }
+i_pop   = { pop ~ reg }
+i_enter = { enter }
+i_leave = { leave }
+
+/* === Data Flow */
+i_mov   = { mov ~ reg ~ comma ~ reg }
+i_li    = { li ~ reg ~ comma ~ imm }
+i_lli   = { lli ~ reg ~ comma ~ imm }
+i_llis  = { llis ~ reg ~ comma ~ imm }
+i_lui   = { lui ~ reg ~ comma ~ imm }
+i_luis  = { luis ~ reg ~ comma ~ imm }
+i_lti   = { lti ~ reg ~ comma ~ imm }
+i_ltis  = { ltis ~ reg ~ comma ~ imm }
+i_ltui  = { ltui ~ reg ~ comma ~ imm }
+i_ltuis = { ltuis ~ reg ~ comma ~ imm }
+i_lw    = { lw ~ reg ~ comma ~ reg ~ (comma ~ imm ~ (comma ~ reg ~ (comma ~ imm)?)?)? }
+i_lh    = { lh ~ reg ~ comma ~ reg ~ (comma ~ imm ~ (comma ~ reg ~ (comma ~ imm)?)?)? }
+i_lhs   = { lhs ~ reg ~ comma ~ reg ~ (comma ~ imm ~ (comma ~ reg ~ (comma ~ imm)?)?)? }
+i_lq    = { lq ~ reg ~ comma ~ reg ~ (comma ~ imm ~ (comma ~ reg ~ (comma ~ imm)?)?)? }
+i_lqs   = { lqs ~ reg ~ comma ~ reg ~ (comma ~ imm ~ (comma ~ reg ~ (comma ~ imm)?)?)? }
+i_lb    = { lb ~ reg ~ comma ~ reg ~ (comma ~ imm ~ (comma ~ reg ~ (comma ~ imm)?)?)? }
+i_lbs   = { lbs ~ reg ~ comma ~ reg ~ (comma ~ imm ~ (comma ~ reg ~ (comma ~ imm)?)?)? }
+i_sw    = { sw ~ ((reg ~ comma ~ reg) | (reg ~ comma ~ imm ~ comma ~ reg ~ ((comma ~ imm)? ~ comma ~ reg)?)) }
+i_sh    = { sh ~ ((reg ~ comma ~ reg) | (reg ~ comma ~ imm ~ comma ~ reg ~ ((comma ~ imm)? ~ comma ~ reg)?)) }
+i_sq    = { sq ~ ((reg ~ comma ~ reg) | (reg ~ comma ~ imm ~ comma ~ reg ~ ((comma ~ imm)? ~ comma ~ reg)?)) }
+i_sb    = { sb ~ ((reg ~ comma ~ reg) | (reg ~ comma ~ imm ~ comma ~ reg ~ ((comma ~ imm)? ~ comma ~ reg)?)) }
+
+/* === Comparisons */
+i_cmpr = { (cmpr | cmp) ~ reg ~ comma ~ reg }
+i_cmpi = { (cmpi | cmp) ~ ((reg ~ comma ~ imm) | (imm ~ comma ~ reg)) }
+
+/* === Arithmetic Operations */
+i_addr  = { (addr | add) ~ reg ~ comma ~ reg ~ comma ~ reg }
+i_addi  = { (addi | add) ~ reg ~ comma ~ reg ~ comma ~ imm }
+i_subr  = { (subr | sub) ~ reg ~ comma ~ reg ~ comma ~ reg }
+i_subi  = { (subi | sub) ~ reg ~ comma ~ reg ~ comma ~ imm }
+i_imulr = { (imulr | imul) ~ reg ~ comma ~ reg ~ comma ~ reg }
+i_imuli = { (imuli | imul) ~ reg ~ comma ~ reg ~ comma ~ imm }
+i_idivr = { (idivr | idiv) ~ reg ~ comma ~ reg ~ comma ~ reg }
+i_idivi = { (idivi | idiv) ~ reg ~ comma ~ reg ~ comma ~ imm }
+i_umulr = { (umulr | umul) ~ reg ~ comma ~ reg ~ comma ~ reg }
+i_umuli = { (umuli | umul) ~ reg ~ comma ~ reg ~ comma ~ imm }
+i_udivr = { (udivr | udiv) ~ reg ~ comma ~ reg ~ comma ~ reg }
+i_udivi = { (udivi | udiv) ~ reg ~ comma ~ reg ~ comma ~ imm }
+i_remr  = { (remr | rem) ~ reg ~ comma ~ reg ~ comma ~ reg }
+i_remi  = { (remi | rem) ~ reg ~ comma ~ reg ~ comma ~ imm }
+i_modr  = { (modr | mod) ~ reg ~ comma ~ reg ~ comma ~ reg }
+i_modi  = { (modi | mod) ~ reg ~ comma ~ reg ~ comma ~ imm }
+
+/* === Bitwise Operations */
+i_not     = { not ~ reg ~ comma ~ reg }
+i_andr    = { (andr | and) ~ reg ~ comma ~ reg ~ comma ~ reg }
+i_andi    = { (andi | and) ~ reg ~ comma ~ reg ~ comma ~ imm }
+i_orr     = { (orr | or) ~ reg ~ comma ~ reg ~ comma ~ reg }
+i_ori     = { (ori | or) ~ reg ~ comma ~ reg ~ comma ~ imm }
+i_norr    = { (norr | nor) ~ reg ~ comma ~ reg ~ comma ~ reg }
+i_nori    = { (nori | nor) ~ reg ~ comma ~ reg ~ comma ~ imm }
+i_xorr    = { (xorr | xor) ~ reg ~ comma ~ reg ~ comma ~ reg }
+i_xori    = { (xori | xor) ~ reg ~ comma ~ reg ~ comma ~ imm }
+i_shlr    = { (shlr | shl) ~ reg ~ comma ~ reg ~ comma ~ reg }
+i_shli    = { (shli | shl) ~ reg ~ comma ~ reg ~ comma ~ imm }
+i_asrr    = { (asrr | asr) ~ reg ~ comma ~ reg ~ comma ~ reg }
+i_asri    = { (asri | asr) ~ reg ~ comma ~ reg ~ comma ~ imm }
+i_lsrr    = { (lsrr | lsr) ~ reg ~ comma ~ reg ~ comma ~ reg }
+i_lsri    = { (lsri | lsr) ~ reg ~ comma ~ reg ~ comma ~ imm }
+i_bitr    = { (bitr | bit) ~ reg ~ comma ~ reg ~ comma ~ reg }
+i_biti    = { (biti | bit) ~ reg ~ comma ~ reg ~ comma ~ imm }
+i_setfs   = { setfs ~ reg }
+i_setfz   = { setfz ~ reg }
+i_setfcb  = { setfcb ~ reg }
+i_setfcbu = { setfcbu ~ reg }
+i_setfe   = { setfe ~ reg }
+i_setfl   = { setfl ~ reg }
+i_setflu  = { setflu ~ reg }
+
+/* === Floating Point Operations */
+i_fcmp  = { fcmp ~ reg ~ comma ~ reg }
+i_fto   = { fto ~ reg ~ comma ~ reg }
+i_ffrom = { ffrom ~ reg ~ comma ~ reg }
+i_fneg  = { fneg ~ reg ~ comma ~ reg }
+i_fabs  = { fabs ~ reg ~ comma ~ reg }
+i_fadd  = { fadd ~ reg ~ comma ~ reg ~ comma ~ reg }
+i_fsub  = { fsub ~ reg ~ comma ~ reg ~ comma ~ reg }
+i_fmul  = { fmul ~ reg ~ comma ~ reg ~ comma ~ reg }
+i_fdiv  = { fdiv ~ reg ~ comma ~ reg ~ comma ~ reg }
+i_fma   = { fma ~ reg ~ comma ~ reg ~ comma ~ reg }
+i_fsqrt = { fsqrt ~ reg ~ comma ~ reg }
+i_fmin  = { fmin ~ reg ~ comma ~ reg ~ comma ~ reg }
+i_fmax  = { fmax ~ reg ~ comma ~ reg ~ comma ~ reg }
+i_fsat  = { fsat ~ reg ~ comma ~ reg }
+i_fcnv  = { fcnv ~ reg ~ comma ~ reg }
+i_fnan  = { fnan ~ reg ~ comma ~ reg }
+
+/* === Pseudo Instructions */
+i_define = { define ~ ident ~ comma ~ imm }
+i_loc    = { loc ~ imm ~ (comma ~ imm)? }
+i_align  = { align ~ imm ~ (comma ~ imm)? }
+i_d8     = { (d8 | byte) ~ imm ~ (comma ~ imm)? }
+i_d16    = { d16 ~ imm ~ (comma ~ imm)? }
+i_d32    = { d32 ~ imm ~ (comma ~ imm)? }
+i_d64    = { d64 ~ imm ~ (comma ~ imm)? }
+i_skip   = { skip ~ imm }
+i_utf8   = { utf8 ~ string }
+
+instruction = { i_nop | i_inv | i_int | i_iret | i_ires | i_usr | i_outr | i_outi | i_inr | i_ini | i_call | i_callr | i_jal | i_jalr | i_ret | i_retr | i_bra | i_beq | i_bez | i_blt | i_ble | i_bltu | i_bleu | i_bne | i_bnz | i_bge | i_bgt | i_bgeu | i_bgtu | i_push | i_pop | i_enter | i_leave | i_mov | i_li | i_lli | i_llis | i_lui | i_luis | i_lti | i_ltis | i_ltui | i_ltuis | i_lw | i_lh | i_lhs | i_lq | i_lqs | i_lb | i_lbs | i_sw | i_sh | i_sq | i_sb | i_cmpr | i_cmpi | i_addr | i_addi | i_subr | i_subi | i_imulr | i_imuli | i_idivr | i_idivi | i_umulr | i_umuli | i_udivr | i_udivi | i_remr | i_remi | i_modr | i_modi | i_not | i_andr | i_andi | i_orr | i_ori | i_norr | i_nori | i_xorr | i_xori | i_shlr | i_shli | i_asrr | i_asri | i_lsrr | i_lsri | i_bitr | i_biti | i_setfs | i_setfz | i_setfcb | i_setfcbu | i_setfe | i_setfl | i_setflu | i_fcmp | i_fto | i_ffrom | i_fneg | i_fabs | i_fadd | i_fsub | i_fmul | i_fdiv | i_fma | i_fsqrt | i_fmin | i_fmax | i_fsat | i_fcnv | i_fnan | i_define | i_loc | i_align | i_d8 | i_d16 | i_d32 | i_d64 | i_skip | i_utf8 }
+
+newline = _{ NEWLINE+ | (NEWLINE* ~ EOI) }
+
+line = { (label ~ newline?) | (instruction ~ comma* ~ newline) }
+file = { SOI ~ newline? ~ line* ~ EOI }
