@@ -230,16 +230,18 @@ fcnv  = ${ "fcnv" ~ f_op_suffix ~ f_op_suffix ~ !ident_char }
 fnan  = ${ "fnan" ~ f_op_suffix ~ !ident_char }
 
 /* === Pseudo Instructions */
-define = @{ "define" ~ !ident_char }
-loc    = @{ "loc" ~ !ident_char }
-align  = @{ "align" ~ !ident_char }
-byte   = @{ "byte" ~ !ident_char }
-d8     = @{ "d8" ~ !ident_char }
-d16    = @{ "d16" ~ !ident_char }
-d32    = @{ "d32" ~ !ident_char }
-d64    = @{ "d64" ~ !ident_char }
-skip   = @{ "skip" ~ !ident_char }
-utf8   = @{ "utf8" ~ !ident_char }
+define  = @{ "define" ~ !ident_char }
+loc     = @{ "loc" ~ !ident_char }
+align   = @{ "align" ~ !ident_char }
+byte    = @{ "byte" ~ !ident_char }
+d8      = @{ "d8" ~ !ident_char }
+d16     = @{ "d16" ~ !ident_char }
+d32     = @{ "d32" ~ !ident_char }
+d64     = @{ "d64" ~ !ident_char }
+skip    = @{ "skip" ~ !ident_char }
+utf8    = @{ "utf8" ~ !ident_char }
+include = @{ "include" ~ !ident_char }
+embed   = @{ "embed" ~ !ident_char }
 
 /* == instructions */
 /* === System Control */
@@ -383,7 +385,11 @@ i_d64    = { d64 ~ imm ~ (comma ~ imm)? }
 i_skip   = { skip ~ imm }
 i_utf8   = { utf8 ~ string }
 
-instruction = { i_nop | i_inv | i_int | i_iret | i_ires | i_usr | i_outr | i_outi | i_inr | i_ini | i_call | i_callr | i_jal | i_jalr | i_ret | i_retr | i_bra | i_beq | i_bez | i_blt | i_ble | i_bltu | i_bleu | i_bne | i_bnz | i_bge | i_bgt | i_bgeu | i_bgtu | i_push | i_pop | i_enter | i_leave | i_mov | i_li | i_lli | i_llis | i_lui | i_luis | i_lti | i_ltis | i_ltui | i_ltuis | i_lw | i_lh | i_lhs | i_lq | i_lqs | i_lb | i_lbs | i_sw | i_sh | i_sq | i_sb | i_cmpr | i_cmpi | i_addr | i_addi | i_subr | i_subi | i_imulr | i_imuli | i_idivr | i_idivi | i_umulr | i_umuli | i_udivr | i_udivi | i_remr | i_remi | i_modr | i_modi | i_not | i_andr | i_andi | i_orr | i_ori | i_norr | i_nori | i_xorr | i_xori | i_shlr | i_shli | i_asrr | i_asri | i_lsrr | i_lsri | i_bitr | i_biti | i_setfs | i_setfz | i_setfcb | i_setfcbu | i_setfe | i_setfl | i_setflu | i_fcmp | i_fto | i_ffrom | i_fneg | i_fabs | i_fadd | i_fsub | i_fmul | i_fdiv | i_fma | i_fsqrt | i_fmin | i_fmax | i_fsat | i_fcnv | i_fnan | i_define | i_loc | i_align | i_d8 | i_d16 | i_d32 | i_d64 | i_skip | i_utf8 }
+/* === Directives */
+i_include = { include ~ string }
+i_embed   = { embed ~ string }
+
+instruction = { i_nop | i_inv | i_int | i_iret | i_ires | i_usr | i_outr | i_outi | i_inr | i_ini | i_call | i_callr | i_jal | i_jalr | i_ret | i_retr | i_bra | i_beq | i_bez | i_blt | i_ble | i_bltu | i_bleu | i_bne | i_bnz | i_bge | i_bgt | i_bgeu | i_bgtu | i_push | i_pop | i_enter | i_leave | i_mov | i_li | i_lli | i_llis | i_lui | i_luis | i_lti | i_ltis | i_ltui | i_ltuis | i_lw | i_lh | i_lhs | i_lq | i_lqs | i_lb | i_lbs | i_sw | i_sh | i_sq | i_sb | i_cmpr | i_cmpi | i_addr | i_addi | i_subr | i_subi | i_imulr | i_imuli | i_idivr | i_idivi | i_umulr | i_umuli | i_udivr | i_udivi | i_remr | i_remi | i_modr | i_modi | i_not | i_andr | i_andi | i_orr | i_ori | i_norr | i_nori | i_xorr | i_xori | i_shlr | i_shli | i_asrr | i_asri | i_lsrr | i_lsri | i_bitr | i_biti | i_setfs | i_setfz | i_setfcb | i_setfcbu | i_setfe | i_setfl | i_setflu | i_fcmp | i_fto | i_ffrom | i_fneg | i_fabs | i_fadd | i_fsub | i_fmul | i_fdiv | i_fma | i_fsqrt | i_fmin | i_fmax | i_fsat | i_fcnv | i_fnan | i_define | i_loc | i_align | i_d8 | i_d16 | i_d32 | i_d64 | i_skip | i_utf8 | i_include | i_embed }
 
 newline = _{ NEWLINE+ | (NEWLINE* ~ EOI) }
 
